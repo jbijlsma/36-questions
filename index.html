@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1B0A2A">
+<title>36 Questions Meet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+:root{--ground:#1B0A2A;--cream:#FFF1E6;--muted:#D9C6E6;--gold:#FFB15C;--a:#FF3D7F;--b:#FF9F1C;--line:rgba(255,241,230,0.22)}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ground)}
+body{color:var(--cream);font-family:'DM Sans',system-ui,sans-serif;display:flex;justify-content:center}
+button{font-family:inherit;cursor:pointer}
+button:disabled{opacity:.35;cursor:default}
+input::placeholder{color:#A890BC}
+input:focus-visible,button:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.app{position:relative;width:100%;max-width:480px;min-height:100%;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+.ring{position:absolute;width:520px;height:520px;border-radius:50%;pointer-events:none}
+.r1{border:1.5px solid rgba(255,61,127,.18);left:-300px;top:-180px}
+.r2{border:1.5px solid rgba(255,159,28,.16);right:-350px;bottom:-240px}
+.screen{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
+.display{font-family:'Bricolage Grotesque',sans-serif}
+.eyebrow{margin:0;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.lead{margin:0;font-size:16px;line-height:1.5;color:var(--muted)}
+.field{height:56px;padding:0 18px;border-radius:16px;border:1.5px solid var(--line);background:rgba(255,241,230,.06);color:var(--cream);font-size:18px;font-family:inherit;width:100%}
+.primary{height:60px;border:none;border-radius:30px;background:var(--a);color:var(--ground);font-size:18px;font-weight:700}
+.icon-btn{width:44px;height:44px;flex:none;border-radius:22px;border:1.5px solid var(--line);background:transparent;color:var(--cream);display:flex;align-items:center;justify-content:center;padding:0}
+.circle{border-radius:50%;mix-blend-mode:screen;flex:none}
+.disc{position:relative;border-radius:50%;flex:none}
+.disc::before{content:'';position:absolute;inset:0;border-radius:50%;background:var(--c);mix-blend-mode:screen}
+.disc>span{position:relative;z-index:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="ring r1" aria-hidden="true"></div>
+  <div class="ring r2" aria-hidden="true"></div>
+  <div id="root" class="screen"></div>
+</div>
+<script>
+(function () {
+  var CATS = [
+    { name: 'Set 1 · Warming up', qs: [
+      'If you could have dinner with anyone in the world, who would you choose?',
+      'Would you like to be famous? For what?',
+      'Before you make a phone call, do you ever rehearse what you’re going to say? Why?',
+      'What would a perfect day look like for you?',
+      'When did you last sing to yourself? And to someone else?',
+      'If you could live to 90 and keep either the mind or the body of a 30-year-old for the last 60 years, which would you pick?',
+      'Do you have a secret hunch about how you will die?',
+      'Name three things you and your partner seem to have in common.',
+      'What in your life do you feel most grateful for?',
+      'If you could change one thing about the way you were raised, what would it be?',
+      'Take four minutes to tell your partner your life story, in as much detail as you can.',
+      'If you could wake up tomorrow with one new quality or ability, what would it be?'
+    ]},
+    { name: 'Set 2 · Opening up', qs: [
+      'If a crystal ball could tell you the truth about yourself, your life or the future, what would you want to know?',
+      'Is there something you’ve dreamed of doing for a long time? Why haven’t you done it?',
+      'What is the greatest accomplishment of your life so far?',
+      'What do you value most in a friendship?',
+      'What is your most treasured memory?',
+      'What is your most painful memory?',
+      'If you knew you would die suddenly in one year, would you change anything about how you live? Why?',
+      'What does friendship mean to you?',
+      'What role do love and affection play in your life?',
+      'Take turns sharing something you see as a positive trait in your partner. Five each.',
+      'How close and warm is your family? Do you feel your childhood was happier than most?',
+      'How do you feel about your relationship with your mother?'
+    ]},
+    { name: 'Set 3 · Letting in', qs: [
+      'Each make three true “we” statements, like “We are both in this room feeling…”',
+      'Complete this sentence: “I wish I had someone with whom I could share…”',
+      'If you were going to become close friends with your partner, what would be important for them to know?',
+      'Tell your partner what you like about them. Be honest — say things you wouldn’t usually say to someone you just met.',
+      'Share an embarrassing moment in your life.',
+      'When did you last cry in front of someone? And by yourself?',
+      'Tell your partner something you already like about them.',
+      'What, if anything, is too serious to be joked about?',
+      'If you died tonight with no chance to talk to anyone, what would you most regret not having told someone? Why haven’t you told them yet?',
+      'Your home catches fire. Everyone you love is safe, and you can save one thing. What is it, and why?',
+      'Of all the people in your family, whose death would you find most disturbing? Why?',
+      'Share a personal problem and ask how your partner would handle it. Ask them how you seem to feel about it.'
+    ]}
+  ];
+  var A = '#FF3D7F', B = '#FF9F1C';
+
+  var S = { screen: 'create', meetName: 'Sunday Lunch', people: [], cat: 0, q: 0, assign: {} };
+  try { var saved = JSON.parse(localStorage.getItem('36q-meet')); if (saved && saved.screen) S = saved; } catch (e) {}
+  function save() { try { localStorage.setItem('36q-meet', JSON.stringify(S)); } catch (e) {} }
+
+  var root = document.getElementById('root');
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function initial(n) { return esc((n || '?').trim().charAt(0).toUpperCase()); }
+
+  function counts(assign) {
+    var c = S.people.map(function () { return 0; });
+    Object.keys(assign).forEach(function (k) { var p = assign[k]; if (c[p[0]] !== undefined) c[p[0]]++; if (c[p[1]] !== undefined) c[p[1]]++; });
+    return c;
+  }
+  function draw(assign) {
+    var c = counts(assign), idx = S.people.map(function (_, i) { return i; });
+    for (var i = idx.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+    idx.sort(function (a, b) { return c[a] - c[b]; });
+    return [idx[0], idx[1]];
+  }
+  function goTo(cat, q) {
+    var cur = S.assign[S.cat + '-' + S.q], key = cat + '-' + q;
+    if (!S.assign[key] && cur) S.assign[key] = cur.slice();
+    S.cat = cat; S.q = q; S.screen = 'live';
+    render();
+  }
+  function set(patch) { for (var k in patch) S[k] = patch[k]; render(); }
+
+  var ICON = {
+    back: '<path d="M15 18l-6-6 6-6"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    dl: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
+    dr: '<path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>',
+    left: '<path d="M19 12H5M11 18l-6-6 6-6"/>',
+    right: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>',
+    shuffle: '<path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>'
+  };
+  function icon(n, s) { return '<svg aria-hidden="true" width="' + (s || 20) + '" height="' + (s || 20) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + ICON[n] + '</svg>'; }
+
+  function viewCreate() {
+    return '<div class="screen" style="padding:56px 28px 36px;gap:28px">' +
+      '<div style="display:flex;align-items:center;height:120px"><div class="circle" style="width:112px;height:112px;background:' + A + '"></div><div class="circle" style="width:112px;height:112px;background:' + B + ';margin-left:-40px"></div></div>' +
+      '<div style="display:flex;flex-direction:column;gap:12px"><p class="eyebrow">36 Questions</p>' +
+      '<h1 class="display" style="margin:0;font-size:44px;line-height:1.02;font-weight:800;letter-spacing:-.02em">Get closer,<br>one pair at a time.</h1>' +
+      '<p class="lead">Start a meet, add everyone at the table, and answer Aron\'s questions in randomly drawn pairs.</p></div>' +
+      '<div style="flex:1"></div>' +
+      '<form id="createForm" style="display:flex;flex-direction:column;gap:10px;margin:0">' +
+      '<label for="meetName" style="font-size:14px;font-weight:500;color:var(--muted)">Name your meet</label>' +
+      '<input id="meetName" class="field" value="' + esc(S.meetName) + '" placeholder="e.g. Sunday Lunch" autocomplete="off">' +
+      '<button class="primary" type="submit" style="margin-top:18px">Create meet</button></form></div>';
+  }
+
+  function viewLobby() {
+    var chips = S.people.map(function (n, i) {
+      return '<div style="display:flex;align-items:center;gap:6px;height:44px;padding:0 6px 0 8px;border-radius:22px;background:rgba(255,241,230,.1)">' +
+        '<span aria-hidden="true" style="width:28px;height:28px;border-radius:50%;background:' + (i % 2 ? B : A) + ';color:var(--ground);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">' + initial(n) + '</span>' +
+        '<span style="font-size:16px;font-weight:500;padding:0 2px">' + esc(n) + '</span>' +
+        '<button data-remove="' + i + '" aria-label="Remove ' + esc(n) + '" style="width:32px;height:32px;border-radius:16px;border:none;background:transparent;color:var(--muted);display:flex;align-items:center;justify-content:center;padding:0">' + icon('x', 14) + '</button></div>';
+    }).join('');
+    return '<div class="screen" style="padding:28px 24px 32px;gap:22px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between"><button class="icon-btn" data-act="toCreate" aria-label="Back">' + icon('back') + '</button><p class="eyebrow">Lobby</p><div style="width:44px"></div></div>' +
+      '<h1 class="display" style="margin:0;font-size:34px;line-height:1.05;font-weight:800;letter-spacing:-.02em">' + esc(S.meetName) + '</h1>' +
+      '<p class="lead" style="margin-top:-8px">Go around the table and add everyone who\'s joining.</p>' +
+      '<div style="display:flex;align-items:baseline;justify-content:space-between"><h2 class="display" style="margin:0;font-size:22px;font-weight:700">Around the table</h2><p style="margin:0;font-size:15px;color:var(--muted)">' + S.people.length + ' people</p></div>' +
+      '<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-wrap:wrap;align-content:flex-start;gap:10px">' + chips + '</div>' +
+      '<form id="addForm" style="display:flex;gap:10px;margin:0"><label for="addName" class="sr">Add someone by name</label>' +
+      '<input id="addName" class="field" style="flex:1;min-width:0;height:52px;font-size:16px;padding:0 16px" placeholder="Type a name, then press +" autocomplete="off">' +
+      '<button type="submit" aria-label="Add person" style="width:52px;height:52px;flex:none;border-radius:16px;border:none;background:rgba(255,241,230,.14);color:var(--cream);display:flex;align-items:center;justify-content:center;padding:0">' + icon('plus') + '</button></form>' +
+      '<button class="primary" data-act="start"' + (S.people.length < 2 ? ' disabled' : '') + '>Start the meet</button></div>';
+  }
+
+  function viewLive() {
+    var cat = CATS[S.cat], last = S.q === cat.qs.length - 1, pair = S.assign[S.cat + '-' + S.q];
+    var question = cat.qs[S.q];
+    var qSize = question.length > 110 ? '23px' : question.length > 70 ? '26px' : '30px';
+    var overlap = ['-26px', '-50px', '-74px'][S.cat], pad = ['20px', '32px', '44px'][S.cat];
+    var tabs = CATS.map(function (c, i) {
+      var cur = i === S.cat;
+      return '<button data-cat="' + i + '"' + (cur ? ' aria-current="true"' : '') + ' style="height:44px;border-radius:22px;border:1.5px solid ' + (cur ? 'var(--cream)' : 'var(--line)') + ';background:' + (cur ? 'var(--cream)' : 'transparent') + ';color:' + (cur ? 'var(--ground)' : 'var(--cream)') + ';font-size:13px;font-weight:700;padding:0 4px;white-space:nowrap">Set ' + (i + 1) + '</button>';
+    }).join('');
+    var nums = cat.qs.map(function (_, i) {
+      var cur = i === S.q, done = !cur && !!S.assign[S.cat + '-' + i];
+      return '<button data-q="' + i + '" aria-label="Question ' + (i + 1) + '"' + (cur ? ' aria-current="true"' : '') + ' style="width:44px;height:44px;border-radius:50%;border:1.5px solid ' + (cur ? 'var(--cream)' : done ? A : 'rgba(255,241,230,.28)') + ';background:' + (cur ? 'var(--cream)' : done ? A : 'transparent') + ';color:' + (cur || done ? 'var(--ground)' : 'var(--cream)') + ';font-size:16px;font-weight:700;padding:0">' + (i + 1) + '</button>';
+    }).join('');
+    var navHint = last && S.cat < CATS.length - 1 ? 'Next: Set ' + (S.cat + 2) : (S.q + 1) + ' / ' + cat.qs.length;
+    var nextDisabled = last && S.cat === CATS.length - 1, prevDisabled = S.cat === 0 && S.q === 0;
+    var nameA = pair ? esc(S.people[pair[0]] || '—') : '?', nameB = pair ? esc(S.people[pair[1]] || '—') : '?';
+    var nameStyle = 'font-family:\'Bricolage Grotesque\',sans-serif;font-size:20px;font-weight:800;color:var(--ground);text-align:center;overflow-wrap:anywhere';
+    return '<div class="screen" style="padding:20px 20px 24px;gap:16px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">' +
+        '<button data-act="toLobby" style="height:40px;padding:0 14px;border-radius:20px;border:1.5px solid var(--line);background:transparent;color:var(--cream);font-size:14px;font-weight:500">End</button>' +
+        '<p style="margin:0;font-size:15px;font-weight:700;flex:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(S.meetName) + '</p>' +
+        '<div aria-label="' + S.people.length + ' people playing" style="height:40px;padding:0 12px;border-radius:20px;background:rgba(255,241,230,.12);font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px">' + icon('people', 16) + S.people.length + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<button class="icon-btn" data-act="prevCat" aria-label="Previous set"' + (S.cat === 0 ? ' disabled' : '') + '>' + icon('dl', 18) + '</button>' +
+        '<div style="flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">' + tabs + '</div>' +
+        '<button class="icon-btn" data-act="nextCat" aria-label="Next set"' + (S.cat === CATS.length - 1 ? ' disabled' : '') + '>' + icon('dr', 18) + '</button>' +
+      '</div>' +
+      '<div style="flex:1;min-height:0;display:flex;flex-direction:column;gap:16px">' +
+        '<div style="display:flex;flex-direction:column;gap:10px">' +
+          '<div style="display:flex;align-items:baseline;justify-content:space-between"><p class="eyebrow" style="letter-spacing:.12em">' + cat.name + '</p><p style="margin:0;font-size:14px;color:var(--muted)">Question ' + (S.q + 1) + ' of ' + cat.qs.length + '</p></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;justify-items:center">' + nums + '</div>' +
+        '</div>' +
+        '<div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:24px 18px 18px 22px;border-radius:28px;background:var(--cream);color:var(--ground);gap:14px">' +
+          '<div style="flex:1;min-height:0;overflow-y:auto;display:flex;align-items:center;padding-right:4px"><p class="display" style="margin:0;font-size:' + qSize + ';line-height:1.18;font-weight:700;letter-spacing:-.01em">' + question + '</p></div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+            '<button data-act="prev" aria-label="Previous question"' + (prevDisabled ? ' disabled' : '') + ' style="width:56px;height:56px;flex:none;border-radius:28px;border:1.5px solid rgba(27,10,42,.25);background:transparent;color:var(--ground);display:flex;align-items:center;justify-content:center;padding:0">' + icon('left', 22) + '</button>' +
+            '<p style="margin:0;font-size:14px;font-weight:700;color:#5E4A6E;text-align:center">' + navHint + '</p>' +
+            '<button data-act="next" aria-label="Next question"' + (nextDisabled ? ' disabled' : '') + ' style="width:56px;height:56px;flex:none;border-radius:28px;border:none;background:var(--ground);color:var(--cream);display:flex;align-items:center;justify-content:center;padding:0">' + icon('right', 22) + '</button>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:8px">' +
+          '<div style="display:flex;align-items:center;justify-content:center;height:132px">' +
+            '<div class="disc" style="--c:' + A + ';width:132px;height:132px;display:flex;align-items:center;justify-content:center;padding:0 ' + pad + ' 0 14px"><span style="' + nameStyle + '">' + nameA + '</span></div>' +
+            '<div class="disc" style="--c:' + B + ';width:132px;height:132px;margin-left:' + overlap + ';display:flex;align-items:center;justify-content:center;padding:0 14px 0 ' + pad + '"><span style="' + nameStyle + '">' + nameB + '</span></div>' +
+          '</div>' +
+          '<button data-act="reroll" style="height:44px;padding:0 18px;border-radius:22px;border:1.5px solid ' + (pair ? 'var(--line)' : 'var(--cream)') + ';background:' + (pair ? 'transparent' : 'var(--cream)') + ';color:' + (pair ? 'var(--muted)' : 'var(--ground)') + ';font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px">' + icon('shuffle', 15) + (pair ? 'Draw another pair' : 'Draw a pair') + '</button>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  function render() {
+    save();
+    root.innerHTML = S.screen === 'lobby' ? viewLobby() : S.screen === 'live' ? viewLive() : viewCreate();
+  }
+
+  root.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (e.target.id === 'createForm') {
+      var n = document.getElementById('meetName').value.trim();
+      if (n) set({ meetName: n, screen: 'lobby' });
+    } else if (e.target.id === 'addForm') {
+      var v = document.getElementById('addName').value.trim();
+      if (v) { S.people.push(v); render(); document.getElementById('addName').focus(); }
+    }
+  });
+
+  root.addEventListener('click', function (e) {
+    var el = e.target.closest('button');
+    if (!el || el.disabled) return;
+    if (el.dataset.remove !== undefined) { S.people.splice(+el.dataset.remove, 1); render(); return; }
+    if (el.dataset.cat !== undefined) { goTo(+el.dataset.cat, 0); return; }
+    if (el.dataset.q !== undefined) { goTo(S.cat, +el.dataset.q); return; }
+    var cat = CATS[S.cat], key = S.cat + '-' + S.q;
+    switch (el.dataset.act) {
+      case 'toCreate': set({ screen: 'create' }); break;
+      case 'toLobby': set({ screen: 'lobby' }); break;
+      case 'start': set({ screen: 'live', cat: 0, q: 0, assign: {} }); break;
+      case 'prevCat': goTo(Math.max(0, S.cat - 1), 0); break;
+      case 'nextCat': goTo(Math.min(CATS.length - 1, S.cat + 1), 0); break;
+      case 'prev':
+        if (S.q > 0) goTo(S.cat, S.q - 1); else if (S.cat > 0) goTo(S.cat - 1, CATS[S.cat - 1].qs.length - 1);
+        break;
+      case 'next':
+        if (S.q < cat.qs.length - 1) goTo(S.cat, S.q + 1); else if (S.cat < CATS.length - 1) goTo(S.cat + 1, 0);
+        break;
+      case 'reroll':
+        var cur = S.assign[key]; delete S.assign[key];
+        var p = draw(S.assign);
+        for (var t = 0; t < 8 && cur && p[0] === cur[0] && p[1] === cur[1]; t++) p = draw(S.assign);
+        S.assign[key] = p; render();
+        break;
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
